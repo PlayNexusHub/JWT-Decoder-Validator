@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <title>PlayNexus JWT Decoder & Validator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="dark">
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="../../assets/logo.png" alt="PlayNexus" class="logo" onerror="this.style.display='none'">
+                    <h1>JWT Decoder & Validator</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" id="importBtn">
+                        <span>📁</span> Import
+                    </button>
+                    <button class="btn btn-secondary" id="generateBtn">
+                        <span>⚡</span> Generate
+                    </button>
+                    <button class="btn btn-secondary" id="settingsBtn">
+                        <span>⚙️</span> Settings
+                    </button>
+                    <button class="btn btn-secondary" id="helpBtn">
+                        <span>❓</span> Help
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Input Section -->
+            <section class="input-section">
+                <div class="input-card">
+                    <h3>JWT Token Input</h3>
+                    <div class="input-group">
+                        <label for="jwtToken">JWT Token:</label>
+                        <textarea 
+                            id="jwtToken" 
+                            class="jwt-input" 
+                            placeholder="Paste your JWT token here (eyJ...)..."
+                            rows="6"
+                        ></textarea>
+                    </div>
+                    
+                    <div class="validation-options">
+                        <h4>Validation Options</h4>
+                        <div class="option-group">
+                            <label>
+                                <input type="checkbox" id="validateSignature" checked>
+                                Validate Signature
+                            </label>
+                        </div>
+                        <div class="secret-input" id="secretSection">
+                            <label for="secretKey">Secret/Key:</label>
+                            <input 
+                                type="password" 
+                                id="secretKey" 
+                                class="secret-input-field"
+                                placeholder="Enter HMAC secret or paste public key..."
+                            >
+                            <button type="button" class="btn-toggle-secret" id="toggleSecret">👁️</button>
+                        </div>
+                    </div>
+
+                    <div class="analysis-controls">
+                        <button class="btn btn-primary" id="analyzeBtn">
+                            <span>🔍</span> Analyze JWT
+                        </button>
+                        <button class="btn btn-secondary" id="clearBtn">
+                            <span>🗑️</span> Clear
+                        </button>
+                    </div>
+
+                    <div class="quick-examples">
+                        <h4>Quick Examples</h4>
+                        <div class="example-tokens">
+                            <button class="example-token" data-type="valid">Valid Token</button>
+                            <button class="example-token" data-type="expired">Expired Token</button>
+                            <button class="example-token" data-type="invalid">Invalid Token</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section">
+                <!-- Loading State -->
+                <div class="loading-state hidden">
+                    <div class="spinner"></div>
+                    <p>Analyzing JWT token...</p>
+                </div>
+
+                <!-- No Results State -->
+                <div class="no-results">
+                    <div class="no-results-icon">🔐</div>
+                    <h3>JWT Decoder & Validator</h3>
+                    <p>Paste a JWT token to analyze its structure, validate claims, and check for security issues.</p>
+                    <div class="features-list">
+                        <div class="feature-item">✓ Decode header and payload</div>
+                        <div class="feature-item">✓ Validate signatures (HMAC, RSA, ECDSA)</div>
+                        <div class="feature-item">✓ Check expiration and timing</div>
+                        <div class="feature-item">✓ Security vulnerability analysis</div>
+                        <div class="feature-item">✓ Generate new JWT tokens</div>
+                    </div>
+                </div>
+
+                <!-- Results Content -->
+                <div class="results-content hidden">
+                    <!-- Security Score -->
+                    <div class="score-section">
+                        <div class="score-card">
+                            <div class="score-circle">
+                                <div class="score-value">0</div>
+                                <div class="score-grade">F</div>
+                            </div>
+                            <div class="score-details">
+                                <h3>Security Score</h3>
+                                <p class="score-description">Overall security assessment of the JWT token</p>
+                                <div class="score-bar">
+                                    <div class="score-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="validation-status">
+                                    <div class="status-item">
+                                        <span class="status-label">Structure:</span>
+                                        <span class="status-value" id="structureStatus">❌</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-label">Signature:</span>
+                                        <span class="status-value" id="signatureStatus">❌</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-label">Timing:</span>
+                                        <span class="status-value" id="timingStatus">❌</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analysis Tabs -->
+                    <div class="analysis-tabs">
+                        <button class="analysis-tab active" data-tab="overview">Overview</button>
+                        <button class="analysis-tab" data-tab="header">Header</button>
+                        <button class="analysis-tab" data-tab="payload">Payload</button>
+                        <button class="analysis-tab" data-tab="signature">Signature</button>
+                        <button class="analysis-tab" data-tab="security">Security</button>
+                        <button class="analysis-tab" data-tab="claims">Claims</button>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+                        <!-- Overview Tab -->
+                        <div class="tab-pane active" id="overview">
+                            <div class="overview-grid">
+                                <div class="info-card">
+                                    <h4>Algorithm</h4>
+                                    <div id="algorithm">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <h4>Issuer</h4>
+                                    <div id="issuer">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <h4>Subject</h4>
+                                    <div id="subject">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <h4>Expires At</h4>
+                                    <div id="expiresAt">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <h4>Issued At</h4>
+                                    <div id="issuedAt">-</div>
+                                </div>
+                                <div class="info-card">
+                                    <h4>Token Status</h4>
+                                    <div id="tokenStatus" class="token-status">-</div>
+                                </div>
+                            </div>
+
+                            <div class="summary-section">
+                                <h4>Summary</h4>
+                                <p id="tokenSummary">Token analysis summary will appear here.</p>
+                            </div>
+
+                            <div class="issues-section">
+                                <h4>Issues Found</h4>
+                                <div class="issues-list" id="issuesList">
+                                    <!-- Issues will be populated here -->
+                                </div>
+                            </div>
+
+                            <div class="recommendations-section">
+                                <h4>Recommendations</h4>
+                                <div class="recommendations-list" id="recommendationsList">
+                                    <!-- Recommendations will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Header Tab -->
+                        <div class="tab-pane" id="header">
+                            <div class="json-section">
+                                <div class="json-header">
+                                    <h4>JWT Header</h4>
+                                    <button class="btn btn-secondary" id="copyHeader">Copy</button>
+                                </div>
+                                <pre class="json-display" id="headerJson">{}</pre>
+                            </div>
+                            
+                            <div class="header-analysis">
+                                <h4>Header Analysis</h4>
+                                <div class="analysis-grid">
+                                    <div class="analysis-item">
+                                        <label>Algorithm (alg):</label>
+                                        <span id="headerAlg">-</span>
+                                    </div>
+                                    <div class="analysis-item">
+                                        <label>Type (typ):</label>
+                                        <span id="headerTyp">-</span>
+                                    </div>
+                                    <div class="analysis-item">
+                                        <label>Key ID (kid):</label>
+                                        <span id="headerKid">-</span>
+                                    </div>
+                                    <div class="analysis-item">
+                                        <label>Content Type (cty):</label>
+                                        <span id="headerCty">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payload Tab -->
+                        <div class="tab-pane" id="payload">
+                            <div class="json-section">
+                                <div class="json-header">
+                                    <h4>JWT Payload</h4>
+                                    <div class="json-controls">
+                                        <button class="btn btn-secondary" id="copyPayload">Copy</button>
+                                        <button class="btn btn-secondary" id="formatPayload">Format</button>
+                                    </div>
+                                </div>
+                                <pre class="json-display" id="payloadJson">{}</pre>
+                            </div>
+
+                            <div class="payload-analysis">
+                                <h4>Standard Claims</h4>
+                                <div class="claims-grid">
+                                    <div class="claim-item">
+                                        <label>Issuer (iss):</label>
+                                        <span id="claimIss">-</span>
+                                    </div>
+                                    <div class="claim-item">
+                                        <label>Subject (sub):</label>
+                                        <span id="claimSub">-</span>
+                                    </div>
+                                    <div class="claim-item">
+                                        <label>Audience (aud):</label>
+                                        <span id="claimAud">-</span>
+                                    </div>
+                                    <div class="claim-item">
+                                        <label>Expires At (exp):</label>
+                                        <span id="claimExp">-</span>
+                                    </div>
+                                    <div class="claim-item">
+                                        <label>Not Before (nbf):</label>
+                                        <span id="claimNbf">-</span>
+                                    </div>
+                                    <div class="claim-item">
+                                        <label>Issued At (iat):</label>
+                                        <span id="claimIat">-</span>
+                                    </div>
+                                    <div class="claim-item">
+                                        <label>JWT ID (jti):</label>
+                                        <span id="claimJti">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Signature Tab -->
+                        <div class="tab-pane" id="signature">
+                            <div class="signature-section">
+                                <h4>Signature Information</h4>
+                                <div class="signature-details">
+                                    <div class="detail-item">
+                                        <label>Algorithm:</label>
+                                        <span id="sigAlgorithm">-</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Signature (Base64URL):</label>
+                                        <div class="signature-display" id="signatureValue">-</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Validation Status:</label>
+                                        <span id="sigValidation" class="validation-badge">Not Validated</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="signature-validation">
+                                <h4>Signature Validation</h4>
+                                <div class="validation-form">
+                                    <div class="input-group">
+                                        <label for="validationSecret">Secret/Public Key:</label>
+                                        <textarea 
+                                            id="validationSecret" 
+                                            class="validation-input"
+                                            placeholder="Enter HMAC secret or paste RSA/ECDSA public key..."
+                                            rows="4"
+                                        ></textarea>
+                                    </div>
+                                    <button class="btn btn-primary" id="validateBtn">Validate Signature</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Tab -->
+                        <div class="tab-pane" id="security">
+                            <div class="vulnerabilities-section">
+                                <h4>Security Vulnerabilities</h4>
+                                <div class="vulnerabilities-list" id="vulnerabilitiesList">
+                                    <!-- Vulnerabilities will be populated here -->
+                                </div>
+                            </div>
+
+                            <div class="security-checklist">
+                                <h4>Security Checklist</h4>
+                                <div class="checklist-items">
+                                    <div class="checklist-item">
+                                        <span class="check-status" id="checkAlgorithm">❌</span>
+                                        <span class="check-label">Secure algorithm used</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="check-status" id="checkExpiration">❌</span>
+                                        <span class="check-label">Token has expiration</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="check-status" id="checkIssuer">❌</span>
+                                        <span class="check-label">Issuer claim present</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="check-status" id="checkAudience">❌</span>
+                                        <span class="check-label">Audience claim present</span>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="check-status" id="checkSignature">❌</span>
+                                        <span class="check-label">Valid signature</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Claims Tab -->
+                        <div class="tab-pane" id="claims">
+                            <div class="claims-section">
+                                <h4>All Claims</h4>
+                                <div class="claims-table">
+                                    <div class="table-header">
+                                        <div class="col-claim">Claim</div>
+                                        <div class="col-value">Value</div>
+                                        <div class="col-type">Type</div>
+                                    </div>
+                                    <div class="table-body" id="claimsTableBody">
+                                        <!-- Claims will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Section -->
+                    <div class="export-section" style="display: none;">
+                        <h4>Export Results</h4>
+                        <div class="export-buttons">
+                            <button class="btn btn-secondary" id="exportJson">
+                                <span>📄</span> Export JSON
+                            </button>
+                            <button class="btn btn-secondary" id="exportCsv">
+                                <span>📊</span> Export CSV
+                            </button>
+                            <button class="btn btn-secondary" id="exportPdf">
+                                <span>📋</span> Export PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Settings Modal -->
+    <div class="modal hidden" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label for="themeSelect">Theme:</label>
+                    <select id="themeSelect">
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                        <option value="auto">Auto</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="autoValidateCheck">
+                        Auto-validate on token input
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="showSensitiveCheck">
+                        Show sensitive data in payload
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="saveHistoryCheck">
+                        Save analysis history
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label for="requiredClaimsInput">Required Claims (comma-separated):</label>
+                    <input type="text" id="requiredClaimsInput" placeholder="iss,exp,aud">
+                </div>
+                <div class="setting-group">
+                    <label for="defaultAlgorithmSelect">Default Algorithm for Generation:</label>
+                    <select id="defaultAlgorithmSelect">
+                        <option value="HS256">HS256</option>
+                        <option value="HS384">HS384</option>
+                        <option value="HS512">HS512</option>
+                        <option value="RS256">RS256</option>
+                        <option value="RS384">RS384</option>
+                        <option value="RS512">RS512</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="tokenExpiryInput">Default Token Expiry:</label>
+                    <input type="text" id="tokenExpiryInput" placeholder="1h">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary">Cancel</button>
+                <button class="btn btn-primary" id="saveSettings">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal hidden" id="helpModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Help & Documentation</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="help-section">
+                    <h4>About JWT Decoder & Validator</h4>
+                    <p>This tool helps you decode, validate, and analyze JSON Web Tokens (JWTs) for security issues and compliance with standards.</p>
+                </div>
+
+                <div class="help-section">
+                    <h4>Features</h4>
+                    <ul>
+                        <li>Decode JWT header and payload</li>
+                        <li>Validate signatures (HMAC, RSA, ECDSA)</li>
+                        <li>Check token expiration and timing claims</li>
+                        <li>Security vulnerability analysis</li>
+                        <li>Generate new JWT tokens</li>
+                        <li>Export analysis results</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4>Supported Algorithms</h4>
+                    <ul>
+                        <li><strong>HMAC:</strong> HS256, HS384, HS512</li>
+                        <li><strong>RSA:</strong> RS256, RS384, RS512</li>
+                        <li><strong>ECDSA:</strong> ES256, ES384, ES512</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4>Security Best Practices</h4>
+                    <ul>
+                        <li>Always use secure algorithms (avoid 'none')</li>
+                        <li>Set appropriate expiration times</li>
+                        <li>Include issuer and audience claims</li>
+                        <li>Use strong secrets for HMAC</li>
+                        <li>Validate signatures in production</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4>Support</h4>
+                    <p>For support and questions, contact: <a href="mailto:playnexushq@gmail.com">playnexushq@gmail.com</a></p>
+                    <p>Owner: Nortaq | PlayNexus Ecosystem</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate JWT Modal -->
+    <div class="modal hidden" id="generateModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Generate JWT Token</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="generate-form">
+                    <div class="form-section">
+                        <h4>Algorithm & Security</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="genAlgorithm">Algorithm:</label>
+                                <select id="genAlgorithm">
+                                    <option value="HS256">HS256</option>
+                                    <option value="HS384">HS384</option>
+                                    <option value="HS512">HS512</option>
+                                    <option value="RS256">RS256</option>
+                                    <option value="RS384">RS384</option>
+                                    <option value="RS512">RS512</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="genExpiry">Expires In:</label>
+                                <input type="text" id="genExpiry" value="1h" placeholder="1h, 30m, 7d">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="genSecret">Secret/Private Key:</label>
+                            <textarea id="genSecret" rows="3" placeholder="Enter HMAC secret or RSA private key..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Standard Claims</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="genIssuer">Issuer (iss):</label>
+                                <input type="text" id="genIssuer" placeholder="https://your-domain.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="genSubject">Subject (sub):</label>
+                                <input type="text" id="genSubject" placeholder="user123">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="genAudience">Audience (aud):</label>
+                                <input type="text" id="genAudience" placeholder="your-api">
+                            </div>
+                            <div class="form-group">
+                                <label for="genKeyId">Key ID (kid):</label>
+                                <input type="text" id="genKeyId" placeholder="key-1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Custom Payload</h4>
+                        <div class="form-group">
+                            <label for="genPayload">Additional Claims (JSON):</label>
+                            <textarea id="genPayload" rows="6" placeholder='{"role": "admin", "permissions": ["read", "write"]}'></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Generated Token</h4>
+                        <div class="generated-token">
+                            <textarea id="generatedToken" rows="4" readonly placeholder="Generated JWT will appear here..."></textarea>
+                            <button class="btn btn-secondary" id="copyGenerated">Copy Token</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary">Cancel</button>
+                <button class="btn btn-primary" id="generateToken">Generate JWT</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
